@@ -227,7 +227,8 @@ def set_mode(mode):
 def write_point(root, path, file_name, point, img_original, is_video):
     global img
     mask_path = os.path.join(root, path)
-    create_folder(mask_path)
+    
+    # create_folder(mask_path)
     img_mask = np.zeros(img.shape)
     img_mask[:,:,0] = cv2.inRange(img, (255,0,0), (255,0,0))
     img_mask[:,:,2] = cv2.inRange(img, (0,0,255), (0,0,255))
@@ -252,6 +253,7 @@ def label_video(data_path, mask_path, ext, filename_list):
     print(f'Labeling Video...(Extension: {ext})')
     for i, file_name in enumerate(filename_list):
         print(f'Starting {file_name}...')
+        create_folder(os.path.join(mask_path, file_name))
         cap = cv2.VideoCapture(os.path.join(data_path, file_name))
         for j in tqdm(range(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))):
             myFrameNumber = j
