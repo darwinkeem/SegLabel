@@ -12,14 +12,19 @@ from tqdm import tqdm
 
 l_btn_down = False
 r_btn_down = False
-t = 7
+t = 4
 mode_draw = 0
 mode_color = 0
 img = None
-img_origianl = None
+img_original = None
 img_undo = None
 crop_x0, crop_y0, crop_x1, crop_y1 = 0, 0, 0, 0
 rec_x0, rec_y0, rec_x1, rec_y1 = 0, 0, 0, 0
+kernel = 7
+height = 258
+width = 438
+shape = (height//kernel, width//kernel)
+grid = np.zeros(shape, dtype=np.int)
 
 def load_filename_list(path, ext):
     path_list = glob.glob(os.path.join(path, "*"))
@@ -37,17 +42,34 @@ def create_folder(dir):
     except OSError:
         print("Error: Creating Directory" + dir)
 
+def grid2img():
+    global grid
+    global img
+    box = img.copy()
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            if grid[i][j] == 1:
+                box[i*kernel : (i+1)*kernel, j*kernel : (j+1)*kernel] = (255, 0, 0)
+            elif grid[i][j] == 2:
+                box[i*kernel : (i+1)*kernel, j*kernel : (j+1)*kernel] = (0, 0, 255)
+            # elif grid[i][j] == 0:
+            #     box[i*kernel : (i+1)*kernel, j*kernel : (j+1)*kernel] = (0, 0, 0)
+    return box
+
 def draw_boundary(event, x, y, flags, point):
     line_thickness = 1
 
     global l_btn_down
     global r_btn_down
     global t
+    global img
     global img_undo
     global img_original
     global mode_draw
     global crop_x0, crop_y0, crop_x1, crop_y1
     global rec_x0, rec_y0, rec_x1, rec_y1
+    global kernel, shape, height, width
+    global grid
 
     if mode_color == 0:
         point_color = (255, 0, 0)
@@ -122,10 +144,48 @@ def draw_boundary(event, x, y, flags, point):
             img[y-t:y+t, x-t:x+t, :] = img_original[y-t:y+t, x-t:x+t, :]  
             
     elif mode_draw == 3:
-        pass
-           
-                
-            
+        if event == cv2.EVENT_LBUTTONUP and l_btn_down:
+            l_btn_down = False
+        elif event == cv2.EVENT_LBUTTONDOWN and not l_btn_down:
+            l_btn_down = True
+            img_undo = img.copy()
+            x = max(0, min(x, width-1))
+            y = max(0, min(y, height-1))
+            r = y // kernel
+            c = x // kernel
+            if point_color == (255, 0, 0):
+                grid[r][c] = 1
+            elif point_color == (0, 0, 255):
+                grid[r][c] = 2
+            img = grid2img()
+        if event == cv2.EVENT_RBUTTONUP and r_btn_down:
+            r_btn_down = False
+        elif event == cv2.EVENT_RBUTTONDOWN and not r_btn_down:
+            r_btn_down = True
+            img_undo = img.copy()
+            x = max(0, min(x, width-1))
+            y = max(0, min(y, height-1))
+            r = y // kernel
+            c = x // kernel
+            grid[r][c] = 0
+            img = grid2img()
+        if event == cv2.EVENT_MOUSEMOVE and l_btn_down:
+            x = max(0, min(x, width-1))
+            y = max(0, min(y, height-1))
+            r = y // kernel
+            c = x // kernel
+            if point_color == (255, 0, 0):
+                grid[r][c] = 1
+            elif point_color == (0, 0, 255):
+                grid[r][c] = 2
+            img = grid2img()
+        elif event == cv2.EVENT_MOUSEMOVE and r_btn_down:
+            x = max(0, min(x, width-1))
+            y = max(0, min(y, height-1))
+            r = y // kernel
+            c = x // kernel
+            grid[r][c] = 0
+            img = grid2img()
     elif mode_draw == 4:
         if event == cv2.EVENT_LBUTTONUP and l_btn_down:
             l_btn_down = False
@@ -312,7 +372,7 @@ def label_video(data_path, mask_path, ext, filename_list):
                     cv2.setTrackbarPos(trackbar_mode, file_name+'_'+str(j), int(c) - int(ord('0')))
 
                 elif c == ord('+') or c == ord('='):
-                    if t <= 20 and t > 0:
+                    if t <= 20:
                         t = t + 1
                     else:
                         print('pen size limit')
@@ -320,8 +380,8 @@ def label_video(data_path, mask_path, ext, filename_list):
                     time.sleep(0.1)
                 
                 elif c == ord('-') or c == ord('_'):
-                    if t <= 20 and t > 0:
-                        t = t + 1
+                    if t > 0:
+                        t = t - 1
                     else:
                         print('pen size limit')
                     cv2.setTrackbarPos(trackbar_size, file_name+'_'+str(j), t)
