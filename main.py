@@ -227,12 +227,31 @@ def set_mode(mode):
 def write_point(root, path, file_name, point, img_original, is_video):
     global img
     mask_path = os.path.join(root, path)
-    
+
     # create_folder(mask_path)
     img_mask = np.zeros(img.shape)
     img_mask[:,:,0] = cv2.inRange(img, (255,0,0), (255,0,0))
     img_mask[:,:,2] = cv2.inRange(img, (0,0,255), (0,0,255))
     cv2.imwrite(os.path.join(mask_path, "{}.png".format(file_name)), img_mask)
+    
+def write_video(root, path):
+    img_array = []
+    print(root)
+    print(path)
+    mask_path = os.path.join(root, path)
+    print(mask_path)
+    dire = os.listdir(root+'/'+path+'/')
+    dire.sort()
+    for filename in dire:
+        print(filename)
+        img = cv2.imread(root+'/'+path+'/'+filename)
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+    out = cv2.VideoWriter(root+'/'+path, cv2.VideoWriter_fourcc(*'MP42'), 20, size)
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+    out.release()
 
 parser = argparse.ArgumentParser()
 parser.add_argument(

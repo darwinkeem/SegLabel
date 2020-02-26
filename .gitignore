@@ -8,6 +8,7 @@ __pycache__/
 *.png
 *.tif
 *.mp4
+*.avi
 */.vscode
 .vscode/
 # Distribution / packaging
