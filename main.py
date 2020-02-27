@@ -18,6 +18,7 @@ mode_color = 0
 img = None
 img_original = None
 img_undo = None
+mask_prev = cv2.imread('samask.png')
 crop_x0, crop_y0, crop_x1, crop_y1 = 0, 0, 0, 0
 rec_x0, rec_y0, rec_x1, rec_y1 = 0, 0, 0, 0
 kernel = 7
@@ -25,6 +26,7 @@ height = 258
 width = 438
 shape = (height//kernel, width//kernel)
 grid = np.zeros(shape, dtype=np.int)
+point_flag = (255, 0, 0)
 
 def load_filename_list(path, ext):
     path_list = glob.glob(os.path.join(path, "*"))
@@ -41,6 +43,20 @@ def create_folder(dir):
             os.makedirs(dir)
     except OSError:
         print("Error: Creating Directory" + dir)
+
+def layer():
+    global img, mask_prev
+    width, height = img.shape[1], img.shape[0]
+    red_color = np.array([0, 0, 255])
+    red_color = red_color.astype('uint8')
+    blue_color = np.array([255, 0, 0])
+    blue_color = blue_color.astype('uint8')
+    for i in range(height):
+        for j in range(width):
+            if all(mask_prev[i, j] == red_color):
+                img[i, j] = red_color
+            if all(mask_prev[i, j] == blue_color):
+                img[i, j] = blue_color
 
 def grid2img():
     global grid
@@ -65,11 +81,13 @@ def draw_boundary(event, x, y, flags, point):
     global img
     global img_undo
     global img_original
+    global mask_prev
     global mode_draw
     global crop_x0, crop_y0, crop_x1, crop_y1
     global rec_x0, rec_y0, rec_x1, rec_y1
     global kernel, shape, height, width
     global grid
+    global point_flag
 
     if mode_color == 0:
         point_color = (255, 0, 0)
@@ -225,15 +243,16 @@ def set_mode(mode):
     pass
 
 def write_point(root, path, file_name, point, img_original, is_video):
-    global img
+    global img, mask_prev
     mask_path = os.path.join(root, path)
-
     # create_folder(mask_path)
     img_mask = np.zeros(img.shape)
     img_mask[:,:,0] = cv2.inRange(img, (255,0,0), (255,0,0))
     img_mask[:,:,2] = cv2.inRange(img, (0,0,255), (0,0,255))
     cv2.imwrite(os.path.join(mask_path, "{}.png".format(file_name)), img_mask)
-    
+    temp = img_mask.astype('uint8')
+    mask_prev = temp.copy()
+
 def write_video(root, path):
     img_array = []
     print(root)
@@ -269,11 +288,16 @@ parser.add_argument(
 cfg = parser.parse_args()
 
 def label_video(data_path, mask_path, ext, filename_list):
+    global mask_prev
     print(f'Labeling Video...(Extension: {ext})')
     for i, file_name in enumerate(filename_list):
         print(f'Starting {file_name}...')
         create_folder(os.path.join(mask_path, file_name))
         cap = cv2.VideoCapture(os.path.join(data_path, file_name))
+        _, temp = cap.read()
+        temp2 = np.zeros(temp.shape, dtype='uint8')
+        cv2.imwrite('samask.png', temp2)
+        mask_prev = cv2.imread('samask.png')
         for j in tqdm(range(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))):
             myFrameNumber = j
             totalFrames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -312,7 +336,14 @@ def label_video(data_path, mask_path, ext, filename_list):
             img_undo = frame.copy()
             crop_x0, crop_y0 = 0, 0
             crop_x1, crop_y1 = img.shape[1], img.shape[0]
-            
+            # print('img dtype')
+            # print(img.dtype)
+            # print(img.shape)
+            # print('img_prev dtype')
+            # print(img_previous.dtype)
+            # print(img_previous.shape)
+            layer()
+
             while(1):
                 if toggle_show_mark == True:
                     img_show = img[crop_y0:crop_y1, crop_x0:crop_x1, :]
@@ -426,7 +457,6 @@ def label_video(data_path, mask_path, ext, filename_list):
                     print(" - +/-: increase/decrease pen size")
                     print(" - ~: reset zoom")
                     print(" - h: help")
-
             cv2.destroyAllWindows()
 
 def label_image(data_path, mask_path, ext, filename_list):

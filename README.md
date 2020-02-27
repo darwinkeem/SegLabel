@@ -8,7 +8,7 @@ Labeling tool for semantic segmentation task
 pip install virtualenv
 virtualenv venv
 call venv/scripts/activate
-pip install -r requirements
+pip install -r requirements.txt
 ```
 
 ## HOW TO USE
