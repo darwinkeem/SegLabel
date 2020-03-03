@@ -48,7 +48,7 @@ def create_folder(dir):
     except OSError:
         print("Error: Creating Directory" + dir)
 
-def layer():
+def layer(flag='dl'):
     global img, mask_prev
     mask_model = cv2.imread('./testimage/_ypred.png')
     mask_model = cv2.resize(mask_model, dsize=(438, 258), interpolation=cv2.INTER_AREA)
@@ -57,12 +57,20 @@ def layer():
     red_color = red_color.astype('uint8')
     blue_color = np.array([255, 0, 0])
     blue_color = blue_color.astype('uint8')
-    for i in range(height):
-        for j in range(width):
-            if all(mask_model[i, j] == (255, 255, 255)):
-                img[i, j] = blue_color
-            # if all(mask_model[i, j] == blue_color):
-            #     img[i, j] = blue_color
+    if flag=='dl':
+        for i in range(height):
+            for j in range(width):
+                if all(mask_model[i, j] == (255, 255, 255)):
+                    img[i, j] = blue_color
+                # if all(mask_model[i, j] == blue_color):
+                #     img[i, j] = blue_color
+    if flag=='prev':
+        for i in range(height):
+            for j in range(width):
+                if all(prev_mask[i, j] == red_color):
+                    img[i, j] = red_color
+                if all(prev_mask[i, j] == blue_color):
+                    img[i, j] = blue_color
 
 def grid2img():
     global grid
@@ -251,7 +259,7 @@ def set_mode(mode):
 def model_label(X):
     global network
     X = r_preprocessing(X)
-    X = X.view(1, 3, 256, 5).cuda()
+    X = X.view(1, 3, 256, 512).cuda()
     y = network(X)
     # y = y.view(1, 512, 256)
     torchvision.utils.save_image(y, './testimage/_ypred.png')
@@ -305,6 +313,9 @@ parser.add_argument(
 )
 parser.add_argument(
     '--if_video', type=bool, default=False
+)
+parser.add_argument(
+    '--flage', type=str, default='dl'
 )
 cfg = parser.parse_args()
 
@@ -365,7 +376,7 @@ def label_video(data_path, mask_path, ext, filename_list):
             # print('img_prev dtype')
             # print(img_previous.dtype)
             # print(img_previous.shape)
-            layer()
+            layer(flag=cfg.flag)
 
             while(1):
                 if toggle_show_mark == True:
