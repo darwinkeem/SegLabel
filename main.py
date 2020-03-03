@@ -244,11 +244,18 @@ def set_mode(mode):
 
 def write_point(root, path, file_name, point, img_original, is_video):
     global img, mask_prev
+    an_root = './data/video_image/'
+    an_mask_path = os.path.join(an_root, path)
+    create_folder(an_mask_path)
+    print(an_mask_path)
+    print(an_mask_path + '/' + "{}.png".format(file_name))
+    cv2.imwrite(an_mask_path + '/' + "{}.png".format(file_name), img_original)
     mask_path = os.path.join(root, path)
-    # create_folder(mask_path)
+    
     img_mask = np.zeros(img.shape)
     img_mask[:,:,0] = cv2.inRange(img, (255,0,0), (255,0,0))
     img_mask[:,:,2] = cv2.inRange(img, (0,0,255), (0,0,255))
+    print(os.path.join(mask_path, "{}.png".format(file_name)))
     cv2.imwrite(os.path.join(mask_path, "{}.png".format(file_name)), img_mask)
     temp = img_mask.astype('uint8')
     mask_prev = temp.copy()
@@ -322,7 +329,7 @@ def label_video(data_path, mask_path, ext, filename_list):
             cv2.namedWindow(file_name+'_'+str(j), cv2.WINDOW_NORMAL)
             cv2.moveWindow(file_name+'_'+str(j), 50, 0)
             cv2.resizeWindow(file_name+'_'+str(j), 1800,900)
-            cv2.setWindowProperty(file_name+'_'+str(j),cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
+            cv2.setWindowProperty(file_name+'_'+str(j), cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
         
             cv2.setMouseCallback(file_name+'_'+str(j), draw_boundary, boundary_point)
             trackbar_color = 'type (0: vein / 1: artery)'

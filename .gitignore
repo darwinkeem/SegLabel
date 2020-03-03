@@ -132,3 +132,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/data/video_image
+/data/video_mask
+/data/mask
+/data/image
+vid_files.txt
+mask_files.txt
+/multi_object_tracking.py
+/optical_flow.py
