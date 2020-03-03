@@ -376,7 +376,7 @@ def label_video(data_path, mask_path, ext, filename_list):
             # print('img_prev dtype')
             # print(img_previous.dtype)
             # print(img_previous.shape)
-            layer(flag=cfg.flag)
+            layer(flag=cfg.flage)
 
             while(1):
                 if toggle_show_mark == True:
