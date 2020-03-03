@@ -342,7 +342,8 @@ def label_video(data_path, mask_path, ext, filename_list, skip):
             if myFrameNumber >= 0 & myFrameNumber <= totalFrames:
                 cap.set(cv2.CAP_PROP_POS_FRAMES,myFrameNumber)
             if skip == True:
-                 if os.path.isfile(f'./data/video_mask/{file_name}/' + file_name.split('.')[0] + str(j)):
+                print(os.path.isfile(f'./data/video_mask/{file_name}/' + file_name.split('.')[0] + str(j)))
+                if os.path.isfile(f'./data/video_mask/{file_name}/' + file_name.split('.')[0] + str(j)):
                      break
             for k in range(0, 1):
                 ret, frame = cap.read()
