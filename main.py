@@ -12,8 +12,11 @@ from tqdm import tqdm
 import torch
 import torchvision
 from utils.transform import r_preprocessing
+from unet_model import UNet
 
-network = torch.load('saved_model/U_Net.pt')
+
+network = UNet(3, 1)
+network.load_state_dict(torch.load('./saved_model/U_Net_state_dict.pt'))
 l_btn_down = False
 r_btn_down = False
 t = 4
@@ -259,7 +262,7 @@ def set_mode(mode):
 def model_label(X):
     global network
     X = r_preprocessing(X)
-    X = X.view(1, 3, 256, 512).cuda()
+    X = X.view(1, 3, 256, 512)
     y = network(X)
     # y = y.view(1, 512, 256)
     torchvision.utils.save_image(y, './testimage/_ypred.png')
