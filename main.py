@@ -51,6 +51,7 @@ def create_folder(dir):
 def layer():
     global img, mask_prev
     mask_model = cv2.imread('./testimage/_ypred.png')
+    mask_model = cv2.resize(mask_model, dsize=(438, 258), interpolation=cv2.INTER_AREA)
     width, height = img.shape[1], img.shape[0]
     red_color = np.array([0, 0, 255])
     red_color = red_color.astype('uint8')
@@ -58,10 +59,10 @@ def layer():
     blue_color = blue_color.astype('uint8')
     for i in range(height):
         for j in range(width):
-            if all(mask_model[i, j] == red_color):
-                img[i, j] = red_color
-            if all(mask_model[i, j] == blue_color):
+            if all(mask_model[i, j] == (255, 255, 255)):
                 img[i, j] = blue_color
+            # if all(mask_model[i, j] == blue_color):
+            #     img[i, j] = blue_color
 
 def grid2img():
     global grid
