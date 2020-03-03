@@ -318,11 +318,14 @@ parser.add_argument(
     '--if_video', type=bool, default=False
 )
 parser.add_argument(
-    '--flage', type=str, default='dl'
+    '--flag', type=str, default='dl'
+)
+parser.add_argument(
+    '--skip', type=bool, default=False
 )
 cfg = parser.parse_args()
 
-def label_video(data_path, mask_path, ext, filename_list):
+def label_video(data_path, mask_path, ext, filename_list, skip):
     global mask_prev
     print(f'Labeling Video...(Extension: {ext})')
     for i, file_name in enumerate(filename_list):
@@ -338,6 +341,9 @@ def label_video(data_path, mask_path, ext, filename_list):
             totalFrames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
             if myFrameNumber >= 0 & myFrameNumber <= totalFrames:
                 cap.set(cv2.CAP_PROP_POS_FRAMES,myFrameNumber)
+            if skip == True:
+                 if os.path.isfile(f'./data/video_mask/{file_name}/' + file_name.split('.')[0] + str(j)):
+                     break
             for k in range(0, 1):
                 ret, frame = cap.read()
                 model_label(frame)
@@ -379,7 +385,7 @@ def label_video(data_path, mask_path, ext, filename_list):
             # print('img_prev dtype')
             # print(img_previous.dtype)
             # print(img_previous.shape)
-            layer(flag=cfg.flage)
+            layer(flag=cfg.flag)
 
             while(1):
                 if toggle_show_mark == True:
@@ -443,9 +449,10 @@ def label_video(data_path, mask_path, ext, filename_list):
                         img_prev = img.copy()
                     
                         # extract masked pixels
-                        img[:,:,0] = cv2.inRange(img_prev, (255,0,0), (255,0,0))
-                        img[:,:,1] = np.zeros(img[:,:,0].shape)
-                        img[:,:,2] = cv2.inRange(img_prev, (0,0,255), (0,0,255))
+                        # img[:,:,0] = cv2.inRange(img_prev, (255,0,0), (255,0,0))
+                        # img[:,:,1] = np.zeros(img[:,:,0].shape)
+                        # img[:,:,2] = cv2.inRange(img_prev, (0,0,255), (0,0,255))
+                        img = img_original
                     
                         toggle_show_mark = True
                     else:
@@ -518,6 +525,6 @@ if __name__ == "__main__":
     print("TODO files: ", end=''); print(todo_list)
 
     if cfg.if_video == True:
-        label_video(data_path, mask_path, ext, filename_list)
+        label_video(data_path, mask_path, ext, filename_list, cfg.skip)
     else:
         label_image(data_path, mask_path, ext, filename_list)
