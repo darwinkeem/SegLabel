@@ -341,12 +341,16 @@ def label_video(data_path, mask_path, ext, filename_list, skip):
             totalFrames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
             if myFrameNumber >= 0 & myFrameNumber <= totalFrames:
                 cap.set(cv2.CAP_PROP_POS_FRAMES,myFrameNumber)
-            if skip == True:
-                print(os.path.isfile(f'./data/video_mask/{file_name}/' + file_name.split('.')[0] + str(j)))
-                if os.path.isfile(f'./data/video_mask/{file_name}/' + file_name.split('.')[0] + str(j)):
-                     break
+            if skip:
+                print(f'./data/video_mask/{file_name}/' + file_name.split('.')[0] + '_' + str(j) + '.png')
+                print(os.path.isfile(
+                    f'./data/video_mask/{file_name}/' + file_name.split('.')[0] + '_' + str(j) + '.png'))
+                if os.path.isfile(
+                        f'./data/video_mask/{file_name}/' + file_name.split('.')[0] + '_' + str(j) + '.png'):
+                    continue
             for k in range(0, 1):
                 ret, frame = cap.read()
+
                 model_label(frame)
                 # cv2.imshow("Video", frame)
                 
