@@ -19,3 +19,16 @@ def preprocessing(image, mask):
     # image_transform.transforms.insert(0, RandAugment(2, 14))
     
     return image_transform(image).float(), image_transform(mask).float()
+
+def r_preprocessing(image):
+    image = image / 255.0
+    image = resize(image, 512, 256)
+    # image, mask = Image.fromarray(image), Image.fromarray(mask)
+    image_transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+        ]
+    )
+    # image_transform.transforms.insert(0, RandAugment(2, 14))
+    
+    return image_transform(image).float()

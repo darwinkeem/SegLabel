@@ -9,7 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
+import torch
+from utils.transform import r_preprocessing
 
+network = torch.load('saved_model/U_Net.pt')
 l_btn_down = False
 r_btn_down = False
 t = 4
@@ -242,6 +245,14 @@ def draw_boundary(event, x, y, flags, point):
 def set_mode(mode):
     pass
 
+def model_label(X):
+    global network
+    X = r_preprocessing(X)
+    X = X.view(1, 3, 512, 256)
+    y = network(X)
+    cv2.imshow('asdf', y.numpy())
+    cv2.waitKey()
+
 def write_point(root, path, file_name, point, img_original, is_video):
     global img, mask_prev
     an_root = './data/video_image/'
@@ -312,6 +323,7 @@ def label_video(data_path, mask_path, ext, filename_list):
                 cap.set(cv2.CAP_PROP_POS_FRAMES,myFrameNumber)
             for k in range(0, 1):
                 ret, frame = cap.read()
+                model_label(frame)
                 # cv2.imshow("Video", frame)
                 
             global l_btn_down
