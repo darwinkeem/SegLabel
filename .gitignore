@@ -140,3 +140,4 @@ vid_files.txt
 mask_files.txt
 /multi_object_tracking.py
 /optical_flow.py
+*.pt

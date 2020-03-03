@@ -10,6 +10,7 @@ import numpy as np
 from tqdm import tqdm
 
 import torch
+import torchvision
 from utils.transform import r_preprocessing
 
 network = torch.load('saved_model/U_Net.pt')
@@ -49,6 +50,7 @@ def create_folder(dir):
 
 def layer():
     global img, mask_prev
+    mask_model = cv2.imread('./testimage/_ypred.png')
     width, height = img.shape[1], img.shape[0]
     red_color = np.array([0, 0, 255])
     red_color = red_color.astype('uint8')
@@ -56,9 +58,9 @@ def layer():
     blue_color = blue_color.astype('uint8')
     for i in range(height):
         for j in range(width):
-            if all(mask_prev[i, j] == red_color):
+            if all(mask_model[i, j] == red_color):
                 img[i, j] = red_color
-            if all(mask_prev[i, j] == blue_color):
+            if all(mask_model[i, j] == blue_color):
                 img[i, j] = blue_color
 
 def grid2img():
@@ -248,10 +250,10 @@ def set_mode(mode):
 def model_label(X):
     global network
     X = r_preprocessing(X)
-    X = X.view(1, 3, 512, 256)
+    X = X.view(1, 3, 256, 5).cuda()
     y = network(X)
-    cv2.imshow('asdf', y.numpy())
-    cv2.waitKey()
+    # y = y.view(1, 512, 256)
+    torchvision.utils.save_image(y, './testimage/_ypred.png')
 
 def write_point(root, path, file_name, point, img_original, is_video):
     global img, mask_prev
