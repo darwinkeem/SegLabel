@@ -8,6 +8,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
+import pydensecrf.densecrf as crf
 
 import torch
 import torchvision
@@ -17,7 +18,7 @@ from unet_model import UNet
 
 network = UNet(3, 1)
 network.load_state_dict(torch.load('./saved_model/label_Vein_Unet20para.pt'))
-l_btn_down = Falsepip
+l_btn_down = False
 r_btn_down = False
 t = 4
 mode_draw = 0
@@ -55,17 +56,29 @@ def densecrf(image, output):
     n_classes = 2
     n_iters = 3
 
-    np_output = np.expand_dims(output, 0)
+    np_output = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)/255.
+    print(np_output.max())
+    np_output = np.expand_dims(np_output, 0)
+    print(np_output.max())
+    # np_output = np_output.transpose((2, 0, 1))
+    print(np_output.shape)
     np_output = np.append(1 - np_output, np_output, axis=0)
+    print(np_output.shape)
 
     d = crf.DenseCRF2D(output.shape[1], output.shape[0], n_classes)
     U = -np.log(np_output)
+    print(U.shape)
     U = U.reshape((2, -1))  # unary potential
+    print(U.shape)
     U = np.ascontiguousarray(U)
+    print(U.shape)
+    U = U.astype('float32')
+    print(U.shape)
     image = np.ascontiguousarray(image)
+    print(U.shape)
     d.setUnaryEnergy(U)
 
-    # sxy: spatial proximity, srgb: color similarity, compat: which is importent?
+    # sxy: spatial proximity, srgb: color similarity, compat: which is important?
     d.addPairwiseGaussian(sxy=5, compat=3)
     d.addPairwiseBilateral(sxy=10, srgb=15, rgbim=image, compat=5)
 
@@ -74,6 +87,8 @@ def densecrf(image, output):
     return Q
 
 def smoothing(mask, kernel_size=3, repeat=1, threshold=0.4):
+    # mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)/255.
+    print(mask.max())
     size = 20
     mask_temp = mask.astype('int')
 
@@ -86,8 +101,9 @@ def smoothing(mask, kernel_size=3, repeat=1, threshold=0.4):
         return s_img
 
     num_vein = len(contour)
+    print(num_vein)
     for i in range(num_vein):
-        if len(contour[i]) < 10:
+        if len(contour[i]) < 20:
             x, y, w, h = cv2.boundingRect(contour[i])
             s_img[y:y+h, x:x+w] = 0
         x, y, w, h = cv2.boundingRect(contour[i])
@@ -103,6 +119,8 @@ def smoothing(mask, kernel_size=3, repeat=1, threshold=0.4):
                     if mask_temp[y_t - size // 2 - 1:y_t + size // 2 - 1,
                        x_t - size // 2 - 1:x_t + size // 2 - 1].sum() > (size * size * threshold):
                         s_img[[y_t - 1], [x_t - 1]] = 1
+    s_img = cv2.cvtColor(s_img, cv2.COLOR_GRAY2BGR)
+    print(s_img.max())
     return s_img
 
 def layer(flag='dl'):
@@ -119,7 +137,7 @@ def layer(flag='dl'):
     if flag=='dl':
         for i in range(height):
             for j in range(width):
-                if all(mask_model[i, j] == (255, 255, 255)):
+                if all(mask_model[i, j] == (1, 1, 1)):
                     img[i, j] = blue_color
                 # if all(mask_model[i, j] == blue_color):
                 #     img[i, j] = blue_color
