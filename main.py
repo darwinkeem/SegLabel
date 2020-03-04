@@ -51,10 +51,68 @@ def create_folder(dir):
     except OSError:
         print("Error: Creating Directory" + dir)
 
+def densecrf(image, output):
+    n_classes = 2
+    n_iters = 3
+
+    np_output = np.expand_dims(output, 0)
+    np_output = np.append(1 - np_output, np_output, axis=0)
+
+    d = crf.DenseCRF2D(output.shape[1], output.shape[0], n_classes)
+    U = -np.log(np_output)
+    U = U.reshape((2, -1))  # unary potential
+    U = np.ascontiguousarray(U)
+    image = np.ascontiguousarray(image)
+    d.setUnaryEnergy(U)
+
+    # sxy: spatial proximity, srgb: color similarity, compat: which is importent?
+    d.addPairwiseGaussian(sxy=5, compat=3)
+    d.addPairwiseBilateral(sxy=10, srgb=15, rgbim=image, compat=5)
+
+    Q = d.inference(n_iters)
+    Q = np.argmax(np.array(Q), axis=0).reshape((output.shape[0], output.shape[1]))
+
+    return Q
+
+def smoothing(mask, kernel_size=3, repeat=1, threshold=0.4):
+    size = 20
+    mask_temp = mask.astype('int')
+
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    s_img = np.array(mask, dtype='uint8')
+    s_img = cv2.morphologyEx(s_img, cv2.MORPH_CLOSE, kernel)
+
+    contour, relation = cv2.findContours(s_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    if len(contour) == 0:
+        return s_img
+
+    num_vein = len(contour)
+    for i in range(num_vein):
+        if len(contour[i]) < 10:
+            x, y, w, h = cv2.boundingRect(contour[i])
+            s_img[y:y+h, x:x+w] = 0
+        x, y, w, h = cv2.boundingRect(contour[i])
+
+        for r in range(repeat):
+            x_t = x
+            while x_t < x + w:
+                x_t += 1
+                y_t = y
+                while y_t < y + h:
+                    y_t += 1
+                    if mask_temp[[y_t - 1], [x_t - 1]] == 1: continue
+                    if mask_temp[y_t - size // 2 - 1:y_t + size // 2 - 1,
+                       x_t - size // 2 - 1:x_t + size // 2 - 1].sum() > (size * size * threshold):
+                        s_img[[y_t - 1], [x_t - 1]] = 1
+
+    return s_img
+
 def layer(flag='dl'):
-    global img, mask_prev
+    global img, mask_prev, img_original
     mask_model = cv2.imread('./testimage/_ypred.png')
     mask_model = cv2.resize(mask_model, dsize=(438, 258), interpolation=cv2.INTER_AREA)
+    mask_model = densecrf(img_original, mask_model)
+    mask_model = smoothing(mask_model)
     width, height = img.shape[1], img.shape[0]
     red_color = np.array([0, 0, 255])
     red_color = red_color.astype('uint8')
