@@ -16,8 +16,8 @@ from unet_model import UNet
 
 
 network = UNet(3, 1)
-network.load_state_dict(torch.load('./saved_model/U_Net_state_dict.pt'))
-l_btn_down = False
+network.load_state_dict(torch.load('./saved_model/label_Vein_Unet20para.pt'))
+l_btn_down = Falsepip
 r_btn_down = False
 t = 4
 mode_draw = 0
@@ -71,7 +71,6 @@ def densecrf(image, output):
 
     Q = d.inference(n_iters)
     Q = np.argmax(np.array(Q), axis=0).reshape((output.shape[0], output.shape[1]))
-
     return Q
 
 def smoothing(mask, kernel_size=3, repeat=1, threshold=0.4):
@@ -104,7 +103,6 @@ def smoothing(mask, kernel_size=3, repeat=1, threshold=0.4):
                     if mask_temp[y_t - size // 2 - 1:y_t + size // 2 - 1,
                        x_t - size // 2 - 1:x_t + size // 2 - 1].sum() > (size * size * threshold):
                         s_img[[y_t - 1], [x_t - 1]] = 1
-
     return s_img
 
 def layer(flag='dl'):
