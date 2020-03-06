@@ -17,10 +17,10 @@ from unet_model import UNet
 
 
 network = UNet(3, 1)
-network.load_state_dict(torch.load('./saved_model/label_Vein_Unet20para.pt'))
+network.load_state_dict(torch.load('./saved_model/Unet_weight30.pt'))
 l_btn_down = False
 r_btn_down = False
-t = 4
+t = 2
 mode_draw = 0
 mode_color = 0
 img = None
@@ -57,25 +57,16 @@ def densecrf(image, output):
     n_iters = 3
 
     np_output = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)/255.
-    print(np_output.max())
     np_output = np.expand_dims(np_output, 0)
-    print(np_output.max())
     # np_output = np_output.transpose((2, 0, 1))
-    print(np_output.shape)
     np_output = np.append(1 - np_output, np_output, axis=0)
-    print(np_output.shape)
 
     d = crf.DenseCRF2D(output.shape[1], output.shape[0], n_classes)
     U = -np.log(np_output)
-    print(U.shape)
     U = U.reshape((2, -1))  # unary potential
-    print(U.shape)
     U = np.ascontiguousarray(U)
-    print(U.shape)
     U = U.astype('float32')
-    print(U.shape)
     image = np.ascontiguousarray(image)
-    print(U.shape)
     d.setUnaryEnergy(U)
 
     # sxy: spatial proximity, srgb: color similarity, compat: which is important?
@@ -86,9 +77,8 @@ def densecrf(image, output):
     Q = np.argmax(np.array(Q), axis=0).reshape((output.shape[0], output.shape[1]))
     return Q
 
-def smoothing(mask, kernel_size=3, repeat=1, threshold=0.4):
+def smoothing(mask, kernel_size=3, repeat=1, threshold=0.6):
     # mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)/255.
-    print(mask.max())
     size = 20
     mask_temp = mask.astype('int')
 
@@ -101,7 +91,6 @@ def smoothing(mask, kernel_size=3, repeat=1, threshold=0.4):
         return s_img
 
     num_vein = len(contour)
-    print(num_vein)
     for i in range(num_vein):
         if len(contour[i]) < 20:
             x, y, w, h = cv2.boundingRect(contour[i])
@@ -120,7 +109,6 @@ def smoothing(mask, kernel_size=3, repeat=1, threshold=0.4):
                        x_t - size // 2 - 1:x_t + size // 2 - 1].sum() > (size * size * threshold):
                         s_img[[y_t - 1], [x_t - 1]] = 1
     s_img = cv2.cvtColor(s_img, cv2.COLOR_GRAY2BGR)
-    print(s_img.max())
     return s_img
 
 def layer(flag='dl'):
@@ -176,6 +164,7 @@ def draw_boundary(event, x, y, flags, point):
     global mode_draw
     global crop_x0, crop_y0, crop_x1, crop_y1
     global rec_x0, rec_y0, rec_x1, rec_y1
+    global erase_x0, erase_x1, erase_y0, erase_y1
     global kernel, shape, height, width
     global grid
     global point_flag
@@ -238,19 +227,23 @@ def draw_boundary(event, x, y, flags, point):
             img_undo = img.copy()
             point.append((x, y))
 
-        elif event == cv2.EVENT_MOUSEMOVE and l_btn_down:
+        if event == cv2.EVENT_MOUSEMOVE and l_btn_down:
             point.append((x, y))
             cv2.line(img, point[-2], (x, y), point_color, line_thickness)
-        
+
         if event == cv2.EVENT_RBUTTONUP and r_btn_down:
             r_btn_down = False
+            img[ erase_y0:erase_y1, erase_x0:erase_x1, :] = img_original[erase_y0:erase_y1, erase_x0:erase_x1, :]
+            erase_x0, erase_y0, erase_x1, erase_y1 = 0, 0, 0, 0
 
         elif event == cv2.EVENT_RBUTTONDOWN and not r_btn_down:
             r_btn_down = True
             img_undo = img.copy()
-            img[y-t:y+t, x-t:x+t, :] = img_original[y-t:y+t, x-t:x+t, :]
+            erase_x0, erase_y0 = x, y
+
         if event == cv2.EVENT_MOUSEMOVE and r_btn_down:
-            img[y-t:y+t, x-t:x+t, :] = img_original[y-t:y+t, x-t:x+t, :]  
+            erase_x1, erase_y1 = x, y
+
             
     elif mode_draw == 3:
         if event == cv2.EVENT_LBUTTONUP and l_btn_down:
@@ -295,6 +288,7 @@ def draw_boundary(event, x, y, flags, point):
             c = x // kernel
             grid[r][c] = 0
             img = grid2img()
+
     elif mode_draw == 4:
         if event == cv2.EVENT_LBUTTONUP and l_btn_down:
             l_btn_down = False
@@ -496,10 +490,10 @@ def label_video(data_path, mask_path, ext, filename_list, skip):
                     time.sleep(0.1)
                     win_zoom_prev = win_zoom
 
-                if c == ord('n'):
+                if c == ord('e') or c == ord('.'):
                     print("\nnext")
                     break
-                
+
                 elif c == ord('q'):
                     print("\nquit all")
                     quit()
@@ -513,16 +507,16 @@ def label_video(data_path, mask_path, ext, filename_list, skip):
                     x1, y1 = img.shape[0], img.shape[1]
                     print("\nreset image")
                 
-                elif c == ord('z'):
+                elif c == ord('z') or c == ord('7'):
                     img = img_undo.copy()
                     boundary_point.clear()
                     print("\nundo")
                 
-                elif c == ord('s'):
+                elif c == ord('s') or c == ord ('9'):
                     write_point(mask_path, file_name, file_name.split('.')[0]+'_'+str(j), boundary_point, img_original, True)
                     print("\n{} saved (dataset, mask)".format(file_name+'_'+str(j)))
                 
-                elif c == ord('m'):
+                elif c == ord('c') or c == ord('8'):
                     # toggle between the semi-transparent masked image and the mask only
                     if toggle_show_mark == False:
                         img_prev = img.copy()
@@ -537,7 +531,7 @@ def label_video(data_path, mask_path, ext, filename_list, skip):
                     else:
                         img = img_prev.copy()
                         toggle_show_mark = False
-                
+
                 elif c == ord('d'):
                     # show doppler image
                     print('\nnot available in video mode')
@@ -569,12 +563,12 @@ def label_video(data_path, mask_path, ext, filename_list, skip):
                 
                 elif c == ord('h'):
                     print("Help:")
-                    print(" - n: next/quit")
+                    print(" - e or - .: next/quit")
                     print(" - q: quit all")
                     print(" - r: reset image")
-                    print(" - z: undo")
-                    print(" - s: save image (in dataset, mask folders)")
-                    print(" - m: toggle between masked/unmasked images")
+                    print(" - z or - 7:undo")
+                    print(" - s or - 9: save image (in dataset, mask folders)")
+                    print(" - c or - 8: toggle between masked/unmasked images")
                     print(" - d: toggle between doppler images")
                     print(" - 0/1/2/3/4: set drawing mode 0/1/2/3/4")
                     print(" - +/-: increase/decrease pen size")
