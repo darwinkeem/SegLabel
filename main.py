@@ -14,10 +14,15 @@ import torch
 import torchvision
 from utils.transform import r_preprocessing
 from unet_model import UNet
+from UPPNet import UPPNet
+
+#network = UNet(3, 1)
+#network.load_state_dict(torch.load('./saved_model/Unet_weight_200306_80.pt'))
+
+network = UPPNet(3, 1, ocr=True, check=True)
+network.load_state_dict(torch.load('./saved_model/UPPNet_OCR_Check60.pt'))
 
 
-network = UNet(3, 1)
-network.load_state_dict(torch.load('./saved_model/Unet_weight30.pt'))
 l_btn_down = False
 r_btn_down = False
 t = 2
@@ -330,8 +335,11 @@ def set_mode(mode):
 def model_label(X):
     global network
     X = r_preprocessing(X)
-    X = X.view(1, 3, 256, 512)
+
+    #X = X.view(1, 3, 256, 512)
+    X = X.view(1, 3, 256, 256)
     y = network(X)
+    y = y[0]
     # y = y.view(1, 512, 256)
     torchvision.utils.save_image(y, './testimage/_ypred.png')
 
@@ -340,7 +348,6 @@ def write_point(root, path, file_name, point, img_original, is_video):
     an_root = './data/video_image/'
     an_mask_path = os.path.join(an_root, path)
     create_folder(an_mask_path)
-    print(an_mask_path)
     print(an_mask_path + '/' + "{}.png".format(file_name))
     cv2.imwrite(an_mask_path + '/' + "{}.png".format(file_name), img_original)
     mask_path = os.path.join(root, path)
@@ -358,7 +365,6 @@ def write_video(root, path):
     print(root)
     print(path)
     mask_path = os.path.join(root, path)
-    print(mask_path)
     dire = os.listdir(root+'/'+path+'/')
     dire.sort()
     for filename in dire:
