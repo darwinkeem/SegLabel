@@ -440,7 +440,7 @@ def label_video(data_path, mask_path, ext, filename_list, skip):
             toggle_show_mark = False
             mode_color_prev, win_zoom_prev  = 0, 0
 
-            cv2.namedWindow(file_name+'_'+str(j), cv2.WINDOW_NORMAL)
+            cv2.namedWindow(file_name+'_'+str(j), cv2.WINDOW_FREERATIO)
             cv2.moveWindow(file_name+'_'+str(j), 50, 0)
             cv2.resizeWindow(file_name+'_'+str(j), 1800,900)
             cv2.setWindowProperty(file_name+'_'+str(j), cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
